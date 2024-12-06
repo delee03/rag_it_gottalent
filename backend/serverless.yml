@@ -40,6 +40,7 @@ functions:
                   path: extract
                   method: post
                   cors: true
+                  timeout: 99
 
 resources:
     Resources:

@@ -19,11 +19,7 @@ MODEL_ARN = "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-5-so
 dynamodb_client = boto3.client("dynamodb")
 
 # Đảm bảo rằng đường dẫn Tesseract được cấu hình đúng
- pytesseract.pytesseract.tesseract_cmd = "/opt/bin/tesseract"  # Đường dẫn trong Lambda layer
-
-# pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"  #Path to Tesseract OCR executable
-
-
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"  #Path to Tesseract OCR executable
 
 DYNAMODB_TABLE_NAME = "UserInputTable"  # Tên bảng DynamoDB của bạn
 
@@ -41,23 +37,20 @@ def save_to_dynamodb(extracted_text, user_input, timestamp):
             }
         )
     except Exception as e:
-        logger.error(f"Error saving to DynamoDB: {e}")
-        raise e
+        logger.error(f"Error saving to DynamoDB: {str(e)}")
+
 
 # Hàm truy vấn Knowledge Base từ AWS Bedrock
-def retrieve_and_generate(user_request, extracted_text=None, kb_id=KNOWLEDGE_BASE_ID):
+def retrieve_and_generate(user_request, extracted_text=None, kb_id="VIBMDAEXUG"):
     """Query the Knowledge Base via AWS Bedrock API."""
-    # Tạo đầu vào cho API, kết hợp text từ input người dùng và OCR
     combined_input = user_request if user_request else ""
     if extracted_text:
-        combined_input += f"\nExtracted Text: {extracted_text}"  # Thêm văn bản từ OCR (nếu có)
+        combined_input += f"\nExtracted Text: {extracted_text}"  # Add OCR text if available
 
-    # Prepare the payload for Retrieve and Generate API
     payload = {
-        "text": combined_input,  # Chỉ cần truyền text vào
+        "text": combined_input,  # Send the combined text to Bedrock
     }
 
-    # Gọi API Retrieve and Generate
     try:
         response = bedrock_agent_client.retrieve_and_generate(
             input=payload,
@@ -69,8 +62,6 @@ def retrieve_and_generate(user_request, extracted_text=None, kb_id=KNOWLEDGE_BAS
                 }
             }
         )
-
-        # Phân tích kết quả trả về
         output = response["output"]["text"]
         citations = response.get("citations", [])
         retrieved_references = [
@@ -79,7 +70,7 @@ def retrieve_and_generate(user_request, extracted_text=None, kb_id=KNOWLEDGE_BAS
         return output, retrieved_references
 
     except Exception as e:
-        print(f"Error calling Retrieve and Generate API: {str(e)}")
+        logger.error(f"Error calling Retrieve and Generate API: {str(e)}")
         return None, None
 
 
@@ -89,59 +80,50 @@ def extract_and_store(event, context):
     logger.info("Processing request")
 
     try:
-        # if not event.get('body'):
-        #     return {
-        #         'statusCode': 400,
-        #         'body': json.dumps({"status": "error", "message": "No data received or data is empty."})
-        #     }
-        data = sys.stdin.readline()
-        if(data):
-            print(data)
-            parsed_data = json.loads(data)
-            print(parsed_data)
-
-        else:
-            print("No data received or data is empty.")
+        # Kiểm tra dữ liệu đầu vào
+        if not event.get('body'):
             return {
                 'statusCode': 400,
                 'body': json.dumps({"status": "error", "message": "No data received or data is empty."})
             }
-        # Giải mã base64 của ảnh từ frontend
+
         body = json.loads(event['body'])
         image_data = body.get("image", "")
         user_input = body.get("user_input", "")
-        
+
+        if not image_data or not user_input:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({"status": "error", "message": "Missing image or user input."})
+            }
+
         # Giải mã base64 thành ảnh
         image = Image.open(io.BytesIO(base64.b64decode(image_data)))
-        
+
         # Trích xuất văn bản từ ảnh (OCR)
         extracted_text = pytesseract.image_to_string(image)
         logger.info(f"Extracted text: {extracted_text}")
-    
+
         # Truy vấn Knowledge Base
         kb_output, retrieved_references = retrieve_and_generate(user_input or None, extracted_text)
-    
+
         # Lưu vào DynamoDB
         timestamp = datetime.now().isoformat()
         save_to_dynamodb(extracted_text, user_input, timestamp)
-        if kb_output:
-            print("Response: ", kb_output)
-            if retrieved_references:
-                print("References: ", retrieved_references)
-        # Trả về kết quả cho frontend
+
+        # Trả về kết quả
         response = {
-            "status": "success",
-            "message": "Processed successfully.",
-            "extracted_text": extracted_text,
-            "kb_output": kb_output,
-            "retrieved_references": retrieved_references
-        }
-    
-        return {
             'statusCode': 200,
-            'body': json.dumps(response)
+            'body': json.dumps({
+                "status": "success",
+                "message": "Processed successfully.",
+                "extracted_text": extracted_text,
+                "kb_output": kb_output,
+                # "retrieved_references": retrieved_references
+            })
         }
-    
+        return response
+
     except Exception as e:
         logger.error(f"Error processing request: {str(e)}")
         return {

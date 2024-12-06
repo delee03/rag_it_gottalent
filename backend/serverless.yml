@@ -8,6 +8,7 @@ provider:
     region: us-east-1
 
 plugins:
+    - serverless-offline
     - serverless-python-requirements
 
 custom:
@@ -33,6 +34,7 @@ functions:
 
     extractAndStoreText:
         handler: handler.extract_and_store
+        timeout: 99
         events:
             - http:
                   path: extract

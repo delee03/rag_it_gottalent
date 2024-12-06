@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Transaction Chatbot</title>
+        <link rel="stylesheet" href="styles.css" />
+    </head>
+    <body>
+        <div class="upload-text">
+            <h2>Upload Image or Enter Text</h2>
+            <input type="file" id="imageInput" />
+            <textarea
+                id="userInput"
+                placeholder="Enter text here..."
+            ></textarea>
+            <button id="submitButton">Submit</button>
+        </div>
+        <div class="response">
+            <h3>Response</h3>
+            <pre id="responseText"></pre>
+        </div>
+
+        <script src="app.js"></script>
+    </body>
+</html>

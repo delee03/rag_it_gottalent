@@ -1,0 +1,56 @@
+org: hutechuniversity
+app: transactionchatbot
+service: backend
+
+provider:
+    name: aws
+    runtime: python3.8
+    region: us-east-1
+
+plugins:
+    - serverless-python-requirements
+
+custom:
+    pythonRequirements:
+        dockerizePip: non-linux # Sử dụng Docker để đóng gói thư viện một cách chính xác
+        zip: true # Đảm bảo rằng bạn chỉ đóng gói những thứ cần thiết
+        exclude:
+            - venv/**
+            - tests/** # Nếu bạn có thư mục tests không cần thiết đóng gói
+
+package:
+    exclude:
+        - venv/**
+        - node_modules/**
+
+functions:
+    processRequest:
+        handler: handler.process_request
+        layers:
+            - arn:aws:lambda:us-east-1:171895670589:layer:tesseract_layer:1
+        environment:
+            TESSERACT_CMD: "/opt/bin/tesseract" # Path to Tesseract within Lambda layer
+
+    extractAndStoreText:
+        handler: handler.extract_and_store
+        events:
+            - http:
+                  path: extract
+                  method: post
+                  cors: true
+
+resources:
+    Resources:
+        ChatbotDynamoDB:
+            Type: AWS::DynamoDB::Table
+            Properties:
+                TableName: UserInputTable
+                AttributeDefinitions:
+                    - AttributeName: timestamp
+                      AttributeType: S
+                KeySchema:
+                    - AttributeName: timestamp
+                      KeyType: HASH
+                ProvisionedThroughput:
+                    ReadCapacityUnits: 5
+                    WriteCapacityUnits: 5

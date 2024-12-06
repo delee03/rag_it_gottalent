@@ -80,53 +80,49 @@ def extract_and_store(event, context):
     logger.info("Processing request")
 
     try:
-        # Kiểm tra dữ liệu đầu vào
-        if not event.get('body'):
-            return {
-                'statusCode': 400,
-                'body': json.dumps({"status": "error", "message": "No data received or data is empty."})
-            }
-
+        # Giải mã base64 của ảnh từ frontend
         body = json.loads(event['body'])
-        image_data = body.get("image", "")
+        image_data = body.get("image", None)
         user_input = body.get("user_input", "")
 
-        if not image_data or not user_input:
-            return {
-                'statusCode': 400,
-                'body': json.dumps({"status": "error", "message": "Missing image or user input."})
-            }
-
-        # Giải mã base64 thành ảnh
-        image = Image.open(io.BytesIO(base64.b64decode(image_data)))
-
-        # Trích xuất văn bản từ ảnh (OCR)
-        extracted_text = pytesseract.image_to_string(image)
-        logger.info(f"Extracted text: {extracted_text}")
+        # Nếu không có ảnh thì set extracted_text là None
+        extracted_text = None
+        if image_data:
+            # Giải mã base64 thành ảnh
+            image = Image.open(io.BytesIO(base64.b64decode(image_data)))
+            # Trích xuất văn bản từ ảnh (OCR)
+            extracted_text = pytesseract.image_to_string(image)
+            logger.info(f"Extracted text: {extracted_text}")
+        else:
+            logger.info("No image received, processing user input only.")
 
         # Truy vấn Knowledge Base
-        kb_output, retrieved_references = retrieve_and_generate(user_input or None, extracted_text)
+        kb_output, retrieved_references = retrieve_and_generate(user_input, extracted_text)
 
         # Lưu vào DynamoDB
         timestamp = datetime.now().isoformat()
         save_to_dynamodb(extracted_text, user_input, timestamp)
 
+        if kb_output:
+            logger.info("Response: ", kb_output)
+            if retrieved_references:
+                logger.info("References: ", retrieved_references)
+            
         # Trả về kết quả
-        response = {
+        return {
             'statusCode': 200,
             'body': json.dumps({
-                "status": "success",
-                "message": "Processed successfully.",
-                "extracted_text": extracted_text,
-                "kb_output": kb_output,
-                # "retrieved_references": retrieved_references
+                'status': 'success',
+                'extracted_text': extracted_text,
+                'kb_output': kb_output,
+                'retrieved_references': retrieved_references
             })
         }
-        return response
-
     except Exception as e:
         logger.error(f"Error processing request: {str(e)}")
         return {
             'statusCode': 500,
             'body': json.dumps({"status": "error", "message": str(e)})
         }
+
+

@@ -1,0 +1,18 @@
++------------------+     +---------------------+     +-------------------+     +----------------+
+|   Frontend/      |     |  API Gateway        |     |  AWS Lambda       |     |  Amazon Bedrock |
+|   Client         |---->|  (HTTP Request)     |---->|  (Extract & Store |---->|  (Knowledge Base)|
+|                  |     |                     |     |    Function)      |     |    Query        |
++------------------+     +---------------------+     +-------------------+     +----------------+
+                               |                           |
+                               v                           v
+                        +--------------+           +-----------------+
+                        |   DynamoDB   |           |  S3 (optional)  |
+                        |   (Storage)  |           |  (Images)       |
+                        +--------------+           +-----------------+
+                               |
+                               v
+                        +----------------+
+                        | Python Libraries|
+                        | (pytesseract,  |
+                        | pillow, boto3) |
+                        +----------------+

@@ -1,0 +1,102 @@
+@import url("https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Roboto+Slab:wght@100..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap");
+
+/* :root {
+    color-scheme: ligh-dark;
+} */
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #212121;
+    color: #fff;
+    font-family: "Roboto Slab", serif;
+}
+
+@keyframes logo-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+.image-inverted:hover {
+    rotate: y 90deg;
+    rotate: x 90deg;
+    filter: drop-shadow(5px 5px 20px rgb(121, 4, 255));
+}
+
+.image-inverted {
+    filter: invert(100%);
+    transition: rotate 1s ease-in-out;
+    animation: logo-spin infinite 10s linear;
+}
+
+.image-main:hover {
+    animation: logo-spin infinite 2s linear;
+}
+
+.image-main {
+    filter: invert(100%);
+    transition: filter 0.5s ease-in-out;
+    animation: logo-spin infinite 8s linear;
+}
+
+.nav-link {
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-right: 10px;
+    margin-left: 10px;
+    padding: 8px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    letter-spacing: 1px;
+    border: 1px solid transparent;
+    transition: all 0.3s;
+}
+
+.nav-link:hover {
+    filter: drop-shadow(5px 5px 20px rgb(121, 4, 255));
+}
+
+*::-webkit-scrollbar-track {
+    -webkit-box-shadow: 0 0 6px 0 rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 6px 0 rgba(0, 0, 0, 0.3);
+    background-color: transparent;
+}
+
+*::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+    background-color: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background-color: transparent;
+}
+
+.MuiOutlinedInput-input-root.Mui-focused,
+.MuiOutlinedInput-notchedOutline {
+    border: 2px solid rgba(255, 255, 255, 0.8) !important;
+    box-shadow: 0px 5px 15px #00fffc;
+}
+
+.demoPropScroll {
+    animation: srolling linear;
+    animation-timeline: scroll();
+    animation-duration: 50s;
+    animation-delay: 1s;
+}
+
+@keyframes srolling {
+    0% {
+        transform: rotateY(0deg);
+    }
+    40% {
+        transform: rotateY(180deg);
+    }
+}
+/* .css-1t8l2tu-MuiInputBase-input-MuiOutlinedInput-input {
+    color: white !important;
+} */

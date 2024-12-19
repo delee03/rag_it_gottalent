@@ -16,3 +16,11 @@
                         | (pytesseract,  |
                         | pillow, boto3) |
                         +----------------+
+sls info - kiểm tra chắc chắn serverless.yml không có lỗi cú pháp
+### Lệnh kiểm tra region hiện tại đang default
+### Get region now
+aws configure get region
+
+### Set region 
+aws configure set region us-east-1
+aws configure set region ap-southeast-1

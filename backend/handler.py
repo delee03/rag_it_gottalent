@@ -14,7 +14,7 @@ logger = logging.getLogger()
 # Khởi tạo Bedrock client
 bedrock_client = boto3.client("bedrock-runtime")
 bedrock_agent_client = boto3.client("bedrock-agent-runtime")
-KNOWLEDGE_BASE_ID = "VIBMDAEXUG"
+KNOWLEDGE_BASE_ID = "FAMVRWKZRX"
 MODEL_ARN = "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-5-sonnet-20240620-v1:0"
 dynamodb_client = boto3.client("dynamodb")
 
@@ -41,7 +41,7 @@ def save_to_dynamodb(extracted_text, user_input, timestamp):
 
 
 # Hàm truy vấn Knowledge Base từ AWS Bedrock
-def retrieve_and_generate(user_request, extracted_text=None, kb_id="VIBMDAEXUG"):
+def retrieve_and_generate(user_request, extracted_text=None, kb_id="FAMVRWKZRX"):
     """Query the Knowledge Base via AWS Bedrock API."""
     combined_input = user_request if user_request else ""
     if extracted_text:

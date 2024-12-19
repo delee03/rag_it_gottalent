@@ -1,54 +1,38 @@
 import json
-import base64
 import boto3
-from PIL import Image
-import pytesseract
-import io
 import logging
 from datetime import datetime
-import sys
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
 # Khởi tạo Bedrock client
-bedrock_client = boto3.client("bedrock-runtime")
 bedrock_agent_client = boto3.client("bedrock-agent-runtime")
-KNOWLEDGE_BASE_ID = "FAMVRWKZRX"
-MODEL_ARN = "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-5-sonnet-20240620-v1:0"
 dynamodb_client = boto3.client("dynamodb")
 
-# Đảm bảo rằng đường dẫn Tesseract được cấu hình đúng
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"  #Path to Tesseract OCR executable
-
-DYNAMODB_TABLE_NAME = "UserInputTable"  # Tên bảng DynamoDB của bạn
+DYNAMODB_TABLE_NAME = "UserInputTable"  # Tên bảng DynamoDB
+KNOWLEDGE_BASE_ID = "FAMVRWKZRX"
+MODEL_ARN = "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-5-sonnet-20240620-v1:0"
 
 # Hàm lưu vào DynamoDB
-def save_to_dynamodb(extracted_text, user_input, timestamp):
+def save_to_dynamodb(user_input, timestamp):
     """Lưu dữ liệu vào DynamoDB"""
     try:
         dynamodb_client.put_item(
             TableName=DYNAMODB_TABLE_NAME,
             Item={
                 'timestamp': {'S': timestamp},
-                'user_input': {'S': user_input},
-                'extracted_text': {'S': extracted_text if extracted_text else ''},
-                'image_received': {'BOOL': extracted_text is not None}
+                'user_input': {'S': user_input}
             }
         )
     except Exception as e:
         logger.error(f"Error saving to DynamoDB: {str(e)}")
 
-
 # Hàm truy vấn Knowledge Base từ AWS Bedrock
-def retrieve_and_generate(user_request, extracted_text=None, kb_id="FAMVRWKZRX"):
+def retrieve_and_generate(user_request, kb_id="FAMVRWKZRX"):
     """Query the Knowledge Base via AWS Bedrock API."""
-    combined_input = user_request if user_request else ""
-    if extracted_text:
-        combined_input += f"\nExtracted Text: {extracted_text}"  # Add OCR text if available
-
     payload = {
-        "text": combined_input,  # Send the combined text to Bedrock
+        "text": user_request,  # Chỉ gửi user_input tới Bedrock
     }
 
     try:
@@ -73,47 +57,37 @@ def retrieve_and_generate(user_request, extracted_text=None, kb_id="FAMVRWKZRX")
         logger.error(f"Error calling Retrieve and Generate API: {str(e)}")
         return None, None
 
-
 # Hàm xử lý yêu cầu và lưu kết quả vào DynamoDB
 def extract_and_store(event, context):
-    """Xử lý yêu cầu, trích xuất văn bản từ ảnh, và lưu vào DynamoDB"""
+    """Xử lý yêu cầu và lưu kết quả vào DynamoDB"""
     logger.info("Processing request")
 
     try:
-        # Giải mã base64 của ảnh từ frontend
+        # Lấy user_input từ frontend
         body = json.loads(event['body'])
-        image_data = body.get("image", None)
         user_input = body.get("user_input", "")
 
-        # Nếu không có ảnh thì set extracted_text là None
-        extracted_text = None
-        if image_data:
-            # Giải mã base64 thành ảnh
-            image = Image.open(io.BytesIO(base64.b64decode(image_data)))
-            # Trích xuất văn bản từ ảnh (OCR)
-            extracted_text = pytesseract.image_to_string(image)
-            logger.info(f"Extracted text: {extracted_text}")
-        else:
-            logger.info("No image received, processing user input only.")
+        if not user_input:
+            raise ValueError("User input is required.")
 
         # Truy vấn Knowledge Base
-        kb_output, retrieved_references = retrieve_and_generate(user_input, extracted_text)
+        kb_output, retrieved_references = retrieve_and_generate(user_input)
 
         # Lưu vào DynamoDB
         timestamp = datetime.now().isoformat()
-        save_to_dynamodb(extracted_text, user_input, timestamp)
+        save_to_dynamodb(user_input, timestamp)
 
-        if kb_output:
-            logger.info("Response: ", kb_output)
-            if retrieved_references:
-                logger.info("References: ", retrieved_references)
-            
         # Trả về kết quả
         return {
             'statusCode': 200,
+            'headers': {
+            "Access-Control-Allow-Origin": "*",  # Các domain được phép truy cập
+            "Access-Control-Allow-Methods": "OPTIONS,POST",# Các phương thức được phép
+            "Access-Control-Allow-Headers": "Content-Type,Authorization", # Các header được phép
+            },
             'body': json.dumps({
                 'status': 'success',
-                'extracted_text': extracted_text,
+                'user_input': user_input,
                 'kb_output': kb_output,
                 'retrieved_references': retrieved_references
             })
@@ -124,5 +98,3 @@ def extract_and_store(event, context):
             'statusCode': 500,
             'body': json.dumps({"status": "error", "message": str(e)})
         }
-
-

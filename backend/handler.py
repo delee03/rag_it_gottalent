@@ -11,7 +11,7 @@ bedrock_agent_client = boto3.client("bedrock-agent-runtime")
 dynamodb_client = boto3.client("dynamodb")
 
 DYNAMODB_TABLE_NAME = "UserInputTable"  # Tên bảng DynamoDB
-KNOWLEDGE_BASE_ID = "FAMVRWKZRX"
+KNOWLEDGE_BASE_ID = "0NFBLDCQRK"
 MODEL_ARN = "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-5-sonnet-20240620-v1:0"
 
 # Hàm lưu vào DynamoDB
@@ -29,7 +29,7 @@ def save_to_dynamodb(user_input, timestamp):
         logger.error(f"Error saving to DynamoDB: {str(e)}")
 
 # Hàm truy vấn Knowledge Base từ AWS Bedrock
-def retrieve_and_generate(user_request, kb_id="FAMVRWKZRX"):
+def retrieve_and_generate(user_request, kb_id="0NFBLDCQRK"):
     """Query the Knowledge Base via AWS Bedrock API."""
     payload = {
         "text": user_request,  # Chỉ gửi user_input tới Bedrock
